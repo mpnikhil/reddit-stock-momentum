@@ -1,0 +1,77 @@
+# Reddit API Configuration
+# Copy this file to config.yaml and fill in your Reddit API credentials
+# Get credentials at: https://www.reddit.com/prefs/apps
+
+reddit:
+  client_id: "your_client_id_here"
+  client_secret: "your_client_secret_here"
+  user_agent: "StockMomentumMonitor/1.0 by YourUsername"
+
+# Application Settings
+app:
+  # Database settings
+  database:
+    url: "sqlite:///./data/reddit_stocks.db"
+    echo: false  # Set to true for SQL query logging
+  
+  # Scheduler settings
+  scheduler:
+    reddit_collection_interval: 30  # minutes
+    post_processing_interval: 15    # minutes
+    trend_calculation_interval: 60  # minutes
+    
+  # Rate limiting
+  rate_limits:
+    reddit_requests_per_minute: 60
+    max_posts_per_subreddit: 100
+    
+  # Data retention
+  data_retention:
+    keep_posts_days: 90
+    keep_trends_days: 365
+    
+# Subreddit Configuration
+subreddits:
+  default_active:
+    - stocks
+    - investing
+    - SecurityAnalysis
+    - ValueInvesting
+    - StockMarket
+    - pennystocks
+    - options
+    - wallstreetbets
+    - financialindependence
+  
+  # Optional: Additional subreddits to monitor
+  additional:
+    - options
+    - Bogleheads
+    - SecurityAnalysis
+
+# Stock Detection Settings
+stock_detection:
+  min_mentions_for_trend: 3
+  confidence_threshold: 0.3
+  excluded_symbols:
+    - "US"
+    - "IT"
+    - "AM"
+    - "PM"
+    - "CEO"
+    - "CFO"
+    - "SEC"
+    - "FDA"
+    - "EPA"
+
+# Sentiment Analysis Settings
+sentiment:
+  update_batch_size: 200
+  confidence_threshold: 0.5
+
+# Logging Configuration
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR
+  file: "logs/app.log"
+  max_file_size: "10MB"
+  backup_count: 5
