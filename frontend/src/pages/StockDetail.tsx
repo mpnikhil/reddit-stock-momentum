@@ -45,7 +45,20 @@ export default function StockDetail() {
   }
 
   if (!stockData) {
-    return null;
+    return (
+      <div className="space-y-4">
+        <Link to="/" className="inline-flex items-center text-primary-600 hover:text-primary-700">
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to Dashboard
+        </Link>
+        <div className="text-center py-12">
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Stock not found</h3>
+          <p className="text-gray-600">
+            No data available for {symbol?.toUpperCase()}. Please try again or go back to the dashboard.
+          </p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -143,17 +156,23 @@ export default function StockDetail() {
         {stockData.recent_posts.length > 0 ? (
           <div className="space-y-4">
             {stockData.recent_posts.map((post) => (
-              <div key={post.id} className="card hover:shadow-md transition-shadow">
+              <a
+                key={post.id}
+                href={post.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="card hover:shadow-md transition-shadow block"
+              >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <h3 className="font-medium text-gray-900 mb-2 line-clamp-2">
+                    <h3 className="font-medium text-gray-900 mb-2 line-clamp-2 hover:text-primary-600 transition-colors">
                       {post.title}
                     </h3>
                     <div className="flex items-center space-x-4 text-sm text-gray-500">
                       <span>r/{post.subreddit}</span>
                       <span>{formatRelativeTime(post.created_time)}</span>
                       <span>Score: {post.score}</span>
-                      {post.sentiment_score !== null && (
+                      {post.sentiment_score !== null && post.sentiment_score !== undefined && (
                         <span className={getSentimentColor(post.sentiment_score)}>
                           Sentiment: {post.sentiment_score.toFixed(2)}
                         </span>
@@ -162,7 +181,7 @@ export default function StockDetail() {
                   </div>
                   <ExternalLink className="h-4 w-4 text-gray-400 ml-4 flex-shrink-0" />
                 </div>
-              </div>
+              </a>
             ))}
           </div>
         ) : (
@@ -190,16 +209,27 @@ export default function StockDetail() {
               {mentionsData.mentions.slice(0, 10).map((mention) => (
                 <div key={mention.mention_id} className="card">
                   <div className="flex items-start justify-between mb-3">
-                    <h3 className="font-medium text-gray-900 line-clamp-1">
-                      {mention.post_title}
-                    </h3>
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2 mb-1">
+                        <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                          mention.source_type === 'comment' 
+                            ? 'bg-blue-100 text-blue-800' 
+                            : 'bg-green-100 text-green-800'
+                        }`}>
+                          {mention.source_type === 'comment' ? 'Comment' : 'Post'}
+                        </span>
+                      </div>
+                      <h3 className="font-medium text-gray-900 line-clamp-1">
+                        {mention.post_title}
+                      </h3>
+                    </div>
                     <span className="text-xs text-gray-500 ml-4 flex-shrink-0">
                       {formatRelativeTime(mention.created_time)}
                     </span>
                   </div>
                   
                   {mention.context_snippet && (
-                    <p className="text-sm text-gray-600 mb-3 italic">
+                    <p className="text-sm text-gray-600 mb-3 italic bg-gray-50 p-2 rounded">
                       "{mention.context_snippet}"
                     </p>
                   )}
@@ -208,10 +238,20 @@ export default function StockDetail() {
                     <div className="flex items-center space-x-4 text-gray-500">
                       <span>r/{mention.subreddit}</span>
                       <span>Mentions: {mention.mention_count}</span>
-                      <span>Score: {mention.post_score}</span>
+                      {mention.source_type === 'post' && <span>Score: {mention.post_score}</span>}
+                      {mention.post_url && (
+                        <a 
+                          href={mention.post_url} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-primary-600 hover:text-primary-700"
+                        >
+                          View Post
+                        </a>
+                      )}
                     </div>
                     
-                    {mention.sentiment_score !== null && (
+                    {mention.sentiment_score !== null && mention.sentiment_score !== undefined && (
                       <span className={`font-medium ${getSentimentColor(mention.sentiment_score)}`}>
                         {mention.sentiment_score > 0.1 ? 'Positive' :
                          mention.sentiment_score < -0.1 ? 'Negative' : 'Neutral'}

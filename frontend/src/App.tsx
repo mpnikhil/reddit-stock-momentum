@@ -12,7 +12,7 @@ function App() {
       <Layout>
         <Routes>
           <Route path="/" element={<Dashboard />} />
-          <Route path="/stock/:symbol" element={<StockDetail />} />
+          <Route path="/stock/:symbol" element={<StockDetail key={window.location.pathname} />} />
           <Route path="/search" element={<Search />} />
           <Route path="/settings" element={<Settings />} />
         </Routes>

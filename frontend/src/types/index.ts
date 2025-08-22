@@ -47,6 +47,7 @@ export interface RecentPost {
   subreddit: string;
   created_time: string;
   score: number;
+  url: string;
   sentiment_score?: number;
 }
 
@@ -58,9 +59,12 @@ export interface StockMention {
   mention_count: number;
   sentiment_score?: number;
   context_snippet?: string;
+  source_type: 'post' | 'comment';
   created_time: string;
   post_score: number;
-  post_url: string;
+  post_url?: string;
+  comment_id?: string;
+  post_created_time?: string;
 }
 
 export interface MomentumSpike {

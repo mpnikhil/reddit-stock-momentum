@@ -65,7 +65,7 @@ async def get_stock_details(
         cutoff_date = datetime.utcnow() - timedelta(days=7)
         recent_posts = db.query(
             Post.id, Post.title, Post.subreddit, Post.created_time, 
-            Post.score, StockMention.sentiment_score
+            Post.score, Post.url, StockMention.sentiment_score
         ).join(StockMention).filter(
             StockMention.stock_symbol == symbol,
             Post.created_time >= cutoff_date
@@ -78,6 +78,7 @@ async def get_stock_details(
                 "subreddit": post.subreddit,
                 "created_time": post.created_time.isoformat(),
                 "score": post.score,
+                "url": post.url,
                 "sentiment_score": float(post.sentiment_score) if post.sentiment_score else None
             }
             for post in recent_posts
@@ -111,38 +112,61 @@ async def get_stock_mentions(
         symbol = symbol.upper()
         cutoff_date = datetime.utcnow() - timedelta(days=days)
         
+        # Get mentions from both posts and comments
         mentions = db.query(
-            StockMention.id,
+            StockMention.id.label('mention_id'),
             StockMention.mention_count,
             StockMention.sentiment_score,
             StockMention.context_snippet,
-            StockMention.created_at,
-            Post.id.label('post_id'),
-            Post.title,
-            Post.subreddit,
-            Post.created_time,
-            Post.score,
-            Post.url
-        ).join(Post).filter(
+            StockMention.source_type,
+            StockMention.created_at.label('mention_created_at'),
+            StockMention.post_id,
+            StockMention.comment_id,
+            Post.title.label('post_title'),
+            Post.subreddit.label('post_subreddit'),
+            Post.created_time.label('post_created_time'),
+            Post.score.label('post_score'),
+            Post.url.label('post_url')
+        ).outerjoin(Post, StockMention.post_id == Post.id
+        ).filter(
             StockMention.stock_symbol == symbol,
-            Post.created_time >= cutoff_date
-        ).order_by(desc(Post.created_time)).limit(limit).all()
+            StockMention.created_at >= cutoff_date
+        ).order_by(desc(StockMention.created_at)).limit(limit).all()
         
-        mentions_data = [
-            {
-                "mention_id": mention.id,
-                "post_id": mention.post_id,
-                "post_title": mention.title,
-                "subreddit": mention.subreddit,
+        mentions_data = []
+        for mention in mentions:
+            mention_data = {
+                "mention_id": mention.mention_id,
                 "mention_count": mention.mention_count,
                 "sentiment_score": float(mention.sentiment_score) if mention.sentiment_score else None,
                 "context_snippet": mention.context_snippet,
-                "created_time": mention.created_time.isoformat(),
-                "post_score": mention.score,
-                "post_url": mention.url
+                "source_type": mention.source_type,
+                "created_time": mention.mention_created_at.isoformat(),
             }
-            for mention in mentions
-        ]
+            
+            # Add post data if this is a post mention
+            if mention.source_type == "post" and mention.post_title:
+                mention_data.update({
+                    "post_id": mention.post_id,
+                    "post_title": mention.post_title,
+                    "subreddit": mention.post_subreddit,
+                    "post_score": mention.post_score,
+                    "post_url": mention.post_url,
+                    "post_created_time": mention.post_created_time.isoformat() if mention.post_created_time else None
+                })
+            elif mention.source_type == "comment":
+                # For comment mentions, we need to get the parent post info
+                mention_data.update({
+                    "comment_id": mention.comment_id,
+                    "post_id": mention.post_id,
+                    "post_title": mention.post_title if mention.post_title else "Comment mention",
+                    "subreddit": mention.post_subreddit if mention.post_subreddit else "Unknown",
+                    "post_score": mention.post_score if mention.post_score else 0,
+                    "post_url": mention.post_url if mention.post_url else None,
+                    "post_created_time": mention.post_created_time.isoformat() if mention.post_created_time else None
+                })
+            
+            mentions_data.append(mention_data)
         
         return {
             "symbol": symbol,
